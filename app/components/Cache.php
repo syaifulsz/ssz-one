@@ -2,9 +2,7 @@
 
 namespace app\components;
 
-use app\components\{
-    Str
-};
+use app\components\{Str};
 
 class Cache
 {
@@ -16,6 +14,9 @@ class Cache
     // project specific properties
     protected $siteId;
     protected $siteDir;
+    protected $siteEnv;
+
+    public $config = [];
 
     public function getInstance( array $configs = [] )
     {
@@ -28,29 +29,50 @@ class Cache
 
     public function __construct( array $configs = [] )
     {
-        $this->m = new \Memcached();
-        $this->m->addServer( $this->getCacheConfig( 'host' ), $this->getCacheConfig( 'port' ) );
-
         // project specific properties
         $this->siteId = $configs[ 'siteId' ] ?? getenv( 'SITE_ID' );
-        $this->siteDir = $configs[ 'siteDir' ] ?? getenv( 'SITE_DIR' );
+        $this->siteDir = $configs[ 'siteDir' ] ?? getenv( 'SITE_DIR' ) ?? ( $this->siteId ? __DIR__ . '/../../sites/' . $this->siteId : '' );
+        if ( !$this->siteDir ) {
+            $this->siteDir = ( $this->siteId ? __DIR__ . '/../../sites/' . $this->siteId : '' );
+        }
+        $this->siteEnv = $configs[ 'siteEnv' ] ?? getenv( 'SITE_ENV' );
+        $this->buildCacheConfig();
+
+        $this->m = new \Memcached();
+        $this->m->addServer( $this->getCacheConfig( 'host' ), $this->getCacheConfig( 'port' ) );
+    }
+
+    private function buildCacheConfig()
+    {
+        $this->config = require __DIR__ . '/../configs/memcached.php';
+
+        if ( $this->siteId ) {
+            $siteConfig = $this->siteDir . '/configs/memcached.php';
+            if ( file_exists( $siteConfig ) ) {
+                $this->config = array_replace_recursive( $this->config, require $siteConfig );
+            }
+
+            if ( $this->siteEnv ) {
+                $envConfigFile = $this->siteDir . '/configs/' . $this->siteEnv . '.php';
+                if ( file_exists( $envConfigFile ) ) {
+                    $envConfig = require $envConfigFile;
+                    if ( !empty( $envConfig[ 'memcached' ] ) ) {
+                        $this->config = array_replace_recursive( $this->config, $envConfig[ 'memcached' ] );
+                    }
+                }
+            }
+        }
+
+        return $this->config;
     }
 
     private function getCacheConfig( string $key = '' )
     {
-        $config = require __DIR__ . '/../configs/memcached.php';
-        if ( $this->siteId ) {
-            $siteConfig = $this->siteDir . '/configs/memcached.php';
-            if ( file_exists( $siteConfig ) ) {
-                $config = array_replace_recursive( $config, require $siteConfig );
-            }
-        }
-
         if ( $key ) {
-            return data_get( $config, $key );
+            return data_get( $this->config, $key );
         }
 
-        return $config;
+        return $this->config;
     }
 
     public function set( $key, $cacheData, $expire = false )
@@ -89,10 +111,5 @@ class Cache
     public function isRefreshCache()
     {
         return ( @$_GET['clearCache'] === 'refresh' );
-    }
-
-    public function isRefreshCacheConfig()
-    {
-        return ( @$_GET['clearCache'] === 'config' );
     }
 }

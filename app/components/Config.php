@@ -79,7 +79,7 @@ class Config
 
     private function buildConfig( array $params = [] ) : array
     {
-        if ( ( $config = $this->cache->get( $this->masterCacheKey ) ) && !Cache::isRefreshCacheConfig() ) {
+        if ( ( $config = $this->cache->get( $this->masterCacheKey ) ) && !Cache::isRefreshCache() ) {
             return $config;
         }
 
