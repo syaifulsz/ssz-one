@@ -8,7 +8,7 @@ use app\components\{
     Url
 };
 
-class Model
+abstract class Model
 {
     protected static $instance;
 

@@ -13,7 +13,7 @@ use app\components\{
     Session
 };
 
-class Controller
+abstract class Controller
 {
     protected static $instance;
 

@@ -5,7 +5,7 @@ namespace app\core\controllers;
 use app\components\{Auth, Session, View, Url, Cache, Config};
 use app\models\layouts\Layout;
 
-class Controller
+abstract class Controller
 {
     protected static $instance;
 
