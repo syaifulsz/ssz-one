@@ -2,20 +2,17 @@
 
 namespace app\components;
 
-class Str
-{
-    public function slugify( string $str, string $delimiter = '-' ) : string
-    {
-        return str_slug($str, $delimiter);
-    }
+use Illuminate\Support\Str as BaseStr;
 
-    public function removeDoubleSpaces( string $str ) : string
+class Str extends BaseStr
+{
+    public static function removeDoubleSpaces( string $str ) : string
     {
         $str = preg_replace( '!\s+!', ' ', $str );
         return trim( $str );
     }
 
-    public function removeTexts( string $str ) : string
+    public static function removeTexts( string $str ) : string
     {
         $str = preg_replace( '/([A-Za-z])\w+/', '', $str );
         return trim( $str );
