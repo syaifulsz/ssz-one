@@ -1,0 +1,25 @@
+# root ignores
+.idea
+.composer
+.vim
+.viminfo
+.bash_history
+_templates
+_temp
+TODO.md
+node_modules
+bower_components
+vendor
+sessions
+
+
+# app
+app/runtime/data/*
+app/runtime/logs/*
+!app/runtime/data/.gitkeep
+!app/runtime/logs/.gitkeep
+app/configs/local.php
+
+# container database
+docker/data/mysql/*
+docker/data/mongodb/*

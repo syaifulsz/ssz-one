@@ -1,0 +1,36 @@
+version: '3'
+services:
+    ssz_one_web_dev:
+        container_name: ssz_one_web_dev
+        build: .
+        ports:
+            - "80:80"
+            - "8000:8000"
+        volumes:
+            - ./../../ssz-one:/var/www/ssz-one
+            - ./nginx/configs:/etc/nginx/sites-enabled
+            - ./nginx/conf-stacks:/etc/nginx/conf-stacks
+            - ./php/00-php.ini:/etc/php/7.2/fpm/conf.d/00-php.ini
+            - ./../sessions:/var/lib/php/sessions
+        working_dir: /var/www/ssz-one
+        links:
+            # - ssz_one_memcached
+            - ssz_one_db
+
+    ssz_one_db:
+        container_name: ssz_one_db
+        image: mariadb
+        restart: always
+        ports:
+            - "7100:3306"
+        volumes:
+            - ./data/mysql:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+
+    # ssz_one_memcached:
+    #     container_name: ssz_one_memcached
+    #     image: memcached
+    #     restart: always
+    #     ports:
+    #         - "11711:11211"

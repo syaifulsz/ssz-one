@@ -1,0 +1,11 @@
+database/data/*
+!database/data/.gitkeep
+runtime/data/*
+runtime/logs/*
+!runtime/data/.gitkeep
+!runtime/logs/.gitkeep
+configs/local.php
+public/media/*
+!public/media/.gitkeep
+public/export/*
+!public/export/.gitkeep
