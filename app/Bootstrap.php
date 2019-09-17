@@ -2,21 +2,16 @@
 
 namespace app;
 
+use Illuminate\Support\Str;
 use app\components\{
-    Auth,
     Route,
     Config,
     Session,
+    Database,
     Url,
+    Auth,
     Cache
 };
-use app\core\{
-    controllers\Controller,
-    models\Model
-};
-
-// var_dump( getenv( 'SITE_DIR' ) ); die;
-// ini_set( 'session.save_path', getenv( 'SITE_DIR' ) . '/sessions' );
 
 define( 'MINUTE_IN_SECONDS', 60 );
 define( 'HOUR_IN_SECONDS',   60 * MINUTE_IN_SECONDS );
@@ -31,11 +26,13 @@ class Bootstrap
 
     // components
     public $config;
+    public $session;
     public $route;
     public $url;
+    public $database;
     public $cache;
-    public $session;
     public $auth;
+    public $cli;
 
     // properties
     protected $errorLogFile;
@@ -61,12 +58,16 @@ class Bootstrap
 
     public function __construct( array $configs = [] )
     {
+        $this->cli = php_sapi_name() === 'cli';
+
         // components
-        $this->config = Config::getInstance();
-        $this->route = Route::getInstance();
-        $this->url = Url::getInstance();
-        $this->session = Session::getInstance();
-        $this->auth = Auth::getInstance();
+        $this->config = Config::getInstance( $configs );
+        $this->cache = Cache::getInstance( $configs );
+        $this->session = Session::getInstance( $configs );
+        $this->route = Route::getInstance( $configs );
+        $this->url = Url::getInstance( $configs );
+        $this->database = Database::getInstance( $configs );
+        $this->auth = Auth::getInstance( $configs );
 
         // properties
         $this->errorLogFile = __DIR__ . '/runtime/logs/app.log';
@@ -90,6 +91,7 @@ class Bootstrap
         $this->setupErrorLog();
         $this->setupToken();
         $this->setupRoute();
+        $this->setupDatabase();
     }
 
     protected function setupErrorLog()
@@ -111,8 +113,10 @@ class Bootstrap
 
         if ( !empty( $_POST ) ) {
 
-            if ( !$this->auth->isAuth() && empty( $_POST[ 'token' ] ) ) {
-                http_response_code( 401 );
+            $doToken = $_POST[ '_token_ignore' ] ?? !$this->auth->isAuth();
+
+            if ( $doToken && empty( $_POST[ 'token' ] ) ) {
+                // http_response_code( 401 );
                 $this->session->setMessage( [
                     'tag' => 'alert',
                     'type' => 'danger',
@@ -125,19 +129,11 @@ class Bootstrap
 
             $sessionToken = $_SESSION[ 'token' ];
             $token = @$_POST[ 'token' ];
+            $this->session->resetToken();
 
-            // remove token reset, let it die after 5 min
-            // @see app/components/Session.php:initToken()
-            // $this->session->resetToken();
+            if ( $doToken && !hash_equals( $sessionToken, $token ) ) {
 
-            // added `tok-ki-dev` for development work
-            // @see @see app/components/Session.php:DEV_TOKEN
-            $devToken = $token === Session::DEV_TOKEN && $this->config->get( 'app.envyronment', 'development' ) === 'development';
-            $checkToken = $devToken ?: hash_equals( $sessionToken, $token );
-
-            if ( !$this->auth->isAuth() && !$checkToken ) {
-
-                http_response_code( 401 );
+                // http_response_code( 401 );
                 $this->session->setMessage( [
                     'tag' => 'alert',
                     'type' => 'danger',
@@ -152,11 +148,45 @@ class Bootstrap
 
     protected function setupDatabase()
     {
-        // nothing for now
+        if ( $this->config->get( 'database.useMysql' ) ) {
+            $this->database->getInstance();
+        }
     }
 
     protected function setupRoute()
     {
+        if ( $this->cli ) {
+            if ( !empty( $_SERVER[ 'argv' ][ 1 ] ) ) {
+                $controller = Str::studly( $_SERVER[ 'argv' ][ 1 ] ) . 'Controller';
+
+                $args = $_SERVER[ 'argv' ];
+                unset( $args[ 0 ] );
+                unset( $args[ 1 ] );
+
+                $params = [];
+                foreach ( $args as $__param ) {
+                    if ( Str::contains( $__param, '=' ) ) {
+                        $param = explode( '=', $__param );
+                        $key = str_replace( '-', '', $param[ 0 ] );
+                        $params[ $key ] = $param[ 1 ];
+                    }
+                }
+
+                require $this->siteDir . '/console/controllers/' . $controller . '.php';
+                return ( new $controller( $params ) )->run();
+            } else {
+
+                echo 'Available controllers:' . PHP_EOL;
+                foreach ( glob( $this->siteDir . '/console/controllers/*.php' ) as $file ) {
+                    $parsed = explode( '/', $file );
+                    $name = str_replace( 'Controller.php', '', end( $parsed ) );
+                    echo ' - ' . Str::kebab( $name ) . PHP_EOL;
+                }
+            }
+            die( 'Stop Cli' );
+        }
+
+
         $routeConfigs = [];
         $routeDir = __DIR__ . '/configs/routes.php';
         foreach ( glob( $routeDir ) as $file ) {
@@ -174,5 +204,6 @@ class Bootstrap
         }
 
         $this->route->listen();
+        $this->session->clearMessages();
     }
 }

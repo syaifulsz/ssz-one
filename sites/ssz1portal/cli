@@ -1,0 +1,10 @@
+<?php
+
+require __DIR__ . '/../../vendor/autoload.php';
+
+app\Bootstrap::getInstance( [
+    'siteId' => 'ssz1portal',
+    'siteDir' => __DIR__,
+    'siteEnv' => getenv( 'SITE_ENV' ),
+    'errorLogFile' => __DIR__ . '/runtime/logs/app.log'
+] );
