@@ -24,15 +24,6 @@ abstract class Model
     protected $cache;
     protected $url;
 
-    public function getInstance( array $configs = [] )
-    {
-        if ( !isset( self::$instance ) ) {
-            self::$instance = new self( $configs );
-        }
-
-        return self::$instance;
-    }
-
     public function __construct( array $configs = [] )
     {
         $this->cache = Cache::getInstance();

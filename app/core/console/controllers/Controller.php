@@ -33,15 +33,6 @@ abstract class Controller
     public $profilerEnd = 0;
     public $profilerDuration = 0;
 
-    public function getInstance( array $configs = [] )
-    {
-        if ( !isset( self::$instance ) ) {
-            self::$instance = new self( $configs );
-        }
-
-        return self::$instance;
-    }
-
     public function __construct( array $config = [] )
     {
         $this->profilerBegin = microtime( true );

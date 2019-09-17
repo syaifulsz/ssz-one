@@ -3,7 +3,6 @@
 namespace app\core\controllers;
 
 use app\components\{Auth, Session, View, Url, Cache, Config};
-use app\models\layouts\Layout;
 
 abstract class Controller
 {
@@ -22,15 +21,6 @@ abstract class Controller
     protected $url;
     protected $session;
     protected $auth;
-
-    public function getInstance( array $configs = [] )
-    {
-        if ( !isset( self::$instance ) ) {
-            self::$instance = new self( $configs );
-        }
-
-        return self::$instance;
-    }
 
     public function __construct( array $config = [] )
     {
